@@ -1,4 +1,4 @@
-```yaml
+
 name: Flutter CI
 
 on:
@@ -38,4 +38,4 @@ jobs:
       # 5. Run automated tests
       - name: Run tests
         run: flutter test
-```
+
