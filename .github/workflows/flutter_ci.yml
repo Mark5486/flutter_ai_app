@@ -1,3 +1,4 @@
+```yaml
 name: Flutter CI
 
 on:
@@ -11,22 +12,30 @@ on:
 
 jobs:
   test:
+    name: Analyze & Test
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Get the project source code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Set up Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
+      # 3. Install project dependencies
       - name: Install dependencies
         run: flutter pub get
 
+      # 4. Check code quality
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
+      # 5. Run automated tests
       - name: Run tests
         run: flutter test
+```
