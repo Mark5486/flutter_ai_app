@@ -1,30 +1,66 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:flutter_ai_app/core/services/routing_service.dart';
+import 'package:flutter_ai_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_ai_app/main.dart';
+import 'package:get_it/get_it.dart';
+
+class FakeRoutingService implements RoutingService {
+  @override
+  Route<dynamic> generateRoute(RouteSettings settings) {
+    return MaterialPageRoute(
+      builder: (_) => const Scaffold(body: Center(child: Text('Test Route'))),
+    );
+  }
+
+  @override
+  void navigateTo(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {}
+
+  @override
+  void navigateAndReplace(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {}
+
+  @override
+  void pop(BuildContext context) {
+    Navigator.pop(context);
+  }
+}
+
+class FakeAuthRepository implements IAuthRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    return super.noSuchMethod(invocation);
+  }
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  final getIt = GetIt.instance;
+
+  setUp(() async {
+    await getIt.reset();
+
+    getIt.registerLazySingleton<RoutingService>(() => FakeRoutingService());
+
+    getIt.registerFactory<AuthCubit>(() => AuthCubit(FakeAuthRepository()));
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+  });
+
+  testWidgets('App builds successfully', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
