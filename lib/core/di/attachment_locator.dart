@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../../features/attachment/data/datasources/attachment_remote_data_source.dart';
 import '../../features/attachment/data/repositories/attachment_repository_impl.dart';
 import '../../features/attachment/domain/repository/attachment_repository.dart';
-import '../../features/attachment/domain/usecases/PickImage_attachment.dart';
+import '../../features/attachment/domain/usecases/pick_image_attachment_use_case.dart';
 import '../../features/attachment/presentation/cubit/attachment_cubit.dart';
 
 final getIt = GetIt.instance;

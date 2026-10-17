@@ -14,8 +14,17 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, state) {
         if (state is Authenticated) {
           return const HomeView();
-        } else if (state is Unauthenticated || state is AuthFailureState) {
+        } else if (state is AuthFailureState &&
+            context.read<AuthCubit>().currentUser != null) {
+          return const HomeView();
+        } else if (state is Unauthenticated ||
+            state is AuthFailureState ||
+            (state is AuthLoading &&
+                context.read<AuthCubit>().currentUser == null)) {
           return const LoginView();
+        } else if (state is AuthLoading &&
+            context.read<AuthCubit>().currentUser != null) {
+          return const HomeView();
         } else {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator.adaptive()),

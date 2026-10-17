@@ -20,7 +20,7 @@ class VoiceInputServiceImpl implements VoiceInputService {
     if (!_speechToText.isListening) {
       await _speechToText.listen(
         onResult: (result) => onResult(result.recognizedWords),
-        localeId: 'ar_SA',
+        listenOptions: SpeechListenOptions(localeId: 'ar_SA'),
       );
     }
   }

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_ai_app/core/services/gemini_service.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_ai_app/core/services/speech_to_text_service.dart';
 import 'package:flutter_ai_app/core/services/text_to_speech_service.dart';
 import 'package:get_it/get_it.dart';
@@ -31,6 +31,12 @@ Future<void> setupCoreLocator() async {
   if (!getIt.isRegistered<FirebaseFirestore>()) {
     getIt.registerLazySingleton<FirebaseFirestore>(
       () => FirebaseFirestore.instance,
+    );
+  }
+
+  if (!getIt.isRegistered<FirebaseStorage>()) {
+    getIt.registerLazySingleton<FirebaseStorage>(
+      () => FirebaseStorage.instance,
     );
   }
 
@@ -78,13 +84,7 @@ Future<void> setupCoreLocator() async {
     getIt.registerLazySingleton<RoutingService>(() => RoutingServiceImpl());
   }
 
-  // AI & Speech Services
-  if (!getIt.isRegistered<GeminiService>()) {
-    getIt.registerLazySingleton<GeminiService>(
-      () => GeminiServiceImpl(apiKey: 'YOUR_GEMINI_API_KEY_HERE'),
-    );
-  }
-
+  // AI credentials belong on the trusted backend, never in the client app.
   if (!getIt.isRegistered<VoiceInputService>()) {
     getIt.registerLazySingleton<VoiceInputService>(
       () => VoiceInputServiceImpl(),

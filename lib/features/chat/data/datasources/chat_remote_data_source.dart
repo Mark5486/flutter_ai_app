@@ -5,13 +5,15 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_ai_app/features/audio/domain/entity/audio_entity.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../attachment/domain/entity/attachment_entity.dart';
+import '../models/chat_session_model.dart';
 import '../models/chat_message_model.dart';
 
 abstract class IChatRemoteDataSource {
-  Stream<List<Map<String, dynamic>>> getChatSessions();
+  Stream<List<ChatSessionModel>> getChatSessions();
 
   Future<String> createNewChat();
 
@@ -28,6 +30,7 @@ abstract class IChatRemoteDataSource {
     String chatId,
     String text, {
     AttachmentEntity? attachment,
+    AudioEntity? audio,
   });
 
   Future<void> retryMessage(String chatId, String messageId);
@@ -61,6 +64,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   static const _fieldTitle = 'title';
   static const _fieldCreatedAt = 'createdAt';
   static const _fieldUpdatedAt = 'updatedAt';
+
   static const _fieldText = 'text';
   static const _fieldSenderId = 'senderId';
   static const _fieldTimestamp = 'timestamp';
@@ -68,6 +72,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   static const _fieldReplyTo = 'replyTo';
   static const _fieldImageUrl = 'imageUrl';
   static const _fieldImageMimeType = 'imageMimeType';
+  static const _fieldAudioUrl = 'audioUrl';
 
   static const _senderUser = 'user';
   static const _senderAi = 'ai';
@@ -78,6 +83,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
 
   static const _defaultChatTitle = 'محادثة جديدة';
   static const _imageOnlyTitlePreview = 'صورة';
+  static const _audioOnlyTitlePreview = 'رسالة صوتية';
   static const _defaultPageSize = 30;
   static const _contextMessagesLimit = 20;
   static const _titlePreviewLength = 25;
@@ -107,21 +113,13 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   }
 
   @override
-  Stream<List<Map<String, dynamic>>> getChatSessions() {
+  Stream<List<ChatSessionModel>> getChatSessions() {
     return _userChatsCollection
         .orderBy(_fieldUpdatedAt, descending: true)
         .snapshots()
         .map(
           (snapshot) =>
-              snapshot.docs
-                  .map(
-                    (doc) => {
-                      'id': doc.id,
-                      'title': doc.data()[_fieldTitle] ?? _defaultChatTitle,
-                      'updatedAt': doc.data()[_fieldUpdatedAt],
-                    },
-                  )
-                  .toList(),
+              snapshot.docs.map(ChatSessionModel.fromFirestore).toList(),
         );
   }
 
@@ -176,18 +174,21 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     String chatId,
     String text, {
     AttachmentEntity? attachment,
+    AudioEntity? audio,
   }) async {
     _validateChatId(chatId);
 
     final messageText = text.trim();
-
-    _validateMessage(messageText, allowEmpty: attachment != null);
-
+    _validateMessage(
+      messageText,
+      allowEmpty: attachment != null || audio != null,
+    );
     final chatRef = _userChatsCollection.doc(chatId);
     final messagesRef = chatRef.collection(_messagesCollection);
     final userMessageRef = messagesRef.doc();
 
     String? imageUrl;
+    String? audioUrl;
 
     if (attachment != null) {
       imageUrl = await _uploadImage(
@@ -197,20 +198,41 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
         mimeType: attachment.mimeType,
       );
     }
+    if (audio != null) {
+      audioUrl = audio.url;
+    }
 
-    await userMessageRef.set({
+    final batch = _firestore.batch();
+    batch.set(userMessageRef, {
       _fieldText: messageText,
       _fieldSenderId: _senderUser,
       _fieldStatus: _statusSending,
       _fieldTimestamp: FieldValue.serverTimestamp(),
       if (imageUrl != null) _fieldImageUrl: imageUrl,
       if (attachment != null) _fieldImageMimeType: attachment.mimeType,
+      if (audioUrl != null) _fieldAudioUrl: audioUrl,
     });
 
-    await _touchChatMetadata(
-      chatRef,
-      messageText.isEmpty ? _imageOnlyTitlePreview : messageText,
-    );
+    final preview =
+        messageText.isNotEmpty
+            ? messageText
+            : attachment != null
+            ? _imageOnlyTitlePreview
+            : _audioOnlyTitlePreview;
+    final title =
+        preview.length > _titlePreviewLength
+            ? '${preview.substring(0, _titlePreviewLength)}...'
+            : preview;
+    batch.set(chatRef, {
+      _fieldTitle: title,
+      _fieldUpdatedAt: FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    try {
+      await batch.commit();
+    } catch (_) {
+      await _deleteStorageObjectQuietly(imageUrl);
+      rethrow;
+    }
 
     await _generateAndSaveReply(
       chatId: chatId,
@@ -317,14 +339,25 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           (data) =>
               data[_fieldStatus] != _statusFailed &&
               ((data[_fieldText] as String? ?? '').trim().isNotEmpty ||
-                  data[_fieldImageUrl] != null),
+                  data[_fieldImageUrl] != null ||
+                  data[_fieldAudioUrl] != null),
         )
-        .map(
-          (data) => {
+        .map((data) {
+          final text = (data[_fieldText] as String? ?? '').trim();
+          final hasImage = data[_fieldImageUrl] != null;
+          final hasAudio = data[_fieldAudioUrl] != null;
+          return {
             'role': data[_fieldSenderId] == _senderUser ? 'user' : 'model',
-            'text': (data[_fieldText] as String? ?? '').trim(),
-          },
-        )
+            'text':
+                text.isNotEmpty
+                    ? text
+                    : hasImage
+                    ? 'أرسل صورة.'
+                    : hasAudio
+                    ? 'أرسل رسالة صوتية غير مفرغة.'
+                    : '',
+          };
+        })
         .toList();
   }
 
@@ -334,10 +367,25 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     Uint8List? imageBytes,
     String? imageMimeType,
   }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'unauthenticated',
+        message: 'انتهت جلسة تسجيل الدخول. سجّل الدخول مجددًا.',
+      );
+    }
+    final idToken = await currentUser.getIdToken();
+    if (idToken == null || idToken.isEmpty) {
+      throw StateError('تعذر التحقق من جلسة تسجيل الدخول.');
+    }
+
     final response = await _httpClient
         .post(
           Uri.parse(_backendUrl),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $idToken',
+          },
           body: jsonEncode({
             'messages': history,
             'clientMessageId': clientMessageId,
@@ -352,8 +400,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-        'Backend error ${response.statusCode}: '
-        '${_readBackendError(response.body)}',
+        'تعذر الحصول على رد من المساعد (رمز ${response.statusCode}).',
       );
     }
 
@@ -370,37 +417,6 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     }
 
     return text.trim();
-  }
-
-  String _readBackendError(String responseBody) {
-    try {
-      final decoded = jsonDecode(responseBody);
-
-      if (decoded is Map<String, dynamic>) {
-        final error = decoded['error'];
-
-        if (error is String && error.trim().isNotEmpty) {
-          return error;
-        }
-      }
-    } catch (_) {}
-
-    return responseBody.isEmpty ? 'Unknown backend error' : responseBody;
-  }
-
-  Future<void> _touchChatMetadata(
-    DocumentReference<Map<String, dynamic>> chatRef,
-    String messageText,
-  ) {
-    final title =
-        messageText.length > _titlePreviewLength
-            ? '${messageText.substring(0, _titlePreviewLength)}...'
-            : messageText;
-
-    return chatRef.set({
-      _fieldTitle: title,
-      _fieldUpdatedAt: FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<String> _uploadImage({
@@ -439,11 +455,11 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     return response.bodyBytes;
   }
 
-  Future<void> _deleteImageQuietly(String? imageUrl) async {
-    if (imageUrl == null) return;
+  Future<void> _deleteStorageObjectQuietly(String? downloadUrl) async {
+    if (downloadUrl == null) return;
 
     try {
-      await _storage.refFromURL(imageUrl).delete();
+      await _storage.refFromURL(downloadUrl).delete();
     } catch (_) {}
   }
 
@@ -482,8 +498,11 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
 
     await batch.commit();
 
-    await _deleteImageQuietly(
+    await _deleteStorageObjectQuietly(
       messageSnapshot.data()?[_fieldImageUrl] as String?,
+    );
+    await _deleteStorageObjectQuietly(
+      messageSnapshot.data()?[_fieldAudioUrl] as String?,
     );
   }
 
@@ -495,7 +514,12 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     final messages = await chatRef.collection(_messagesCollection).get();
 
     for (final message in messages.docs) {
-      await _deleteImageQuietly(message.data()[_fieldImageUrl] as String?);
+      await _deleteStorageObjectQuietly(
+        message.data()[_fieldImageUrl] as String?,
+      );
+      await _deleteStorageObjectQuietly(
+        message.data()[_fieldAudioUrl] as String?,
+      );
     }
 
     for (var start = 0; start < messages.docs.length; start += 500) {

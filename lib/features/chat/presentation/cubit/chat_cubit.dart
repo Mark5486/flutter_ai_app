@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../attachment/domain/entity/attachment_entity.dart';
+import '../../../audio/domain/entity/audio_entity.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../domain/usecases/create_new_chat_use_case.dart';
 import '../../domain/usecases/get_messages_usecase.dart';
@@ -152,8 +153,15 @@ class ChatCubit extends Cubit<ChatState> {
     );
   }
 
-  Future<void> sendMessage(String text, {AttachmentEntity? attachment}) async {
-    if (_isSending || (text.trim().isEmpty && attachment == null)) return;
+  Future<void> sendMessage(
+    String text, {
+    AttachmentEntity? attachment,
+    AudioEntity? audio,
+  }) async {
+    if (_isSending ||
+        (text.trim().isEmpty && attachment == null && audio == null)) {
+      return;
+    }
 
     _isSending = true;
     _emitSendingState();
@@ -177,6 +185,7 @@ class ChatCubit extends Cubit<ChatState> {
         chatId: activeChatId,
         text: text.trim(),
         attachment: attachment,
+        audio: audio,
       );
 
       result.fold(

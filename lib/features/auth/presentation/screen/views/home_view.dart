@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_ai_app/core/constants/app_routes.dart';
 import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeView extends StatelessWidget {
@@ -8,39 +9,49 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الرئيسية'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => context.read<AuthCubit>().logout(),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'أهلاً بك في التطبيق 🚀',
-              style: TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('الانتقال للمحادثة'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.chat);
-              },
+    return BlocListener<AuthCubit, AuthState>(
+      listenWhen: (previous, current) => current is AuthFailureState,
+      listener: (context, state) {
+        if (state is AuthFailureState) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('الرئيسية'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => context.read<AuthCubit>().logout(),
             ),
           ],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'أهلاً بك في التطبيق 🚀',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text('الانتقال للمحادثة'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.chat);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

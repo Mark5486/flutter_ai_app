@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_ai_app/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -55,31 +54,12 @@ class AuthRepositoryImpl implements IAuthRepository {
         password,
       );
 
-      print('✅ FIREBASE REGISTER SUCCESS');
-      print('👤 UID: ${user.uid}');
-
       return Right(user);
     } on FirebaseAuthException catch (e) {
-      print('🔥 FIREBASE AUTH ERROR');
-      print('CODE: ${e.code}');
-      print('MESSAGE: ${e.message}');
-      print('PLUGIN: ${e.plugin}');
-      print('EMAIL: ${e.email}');
-
       return Left(_handleFirebaseAuthException(e));
     } on FirebaseException catch (e) {
-      print('🔥 FIREBASE GENERAL ERROR');
-      print('CODE: ${e.code}');
-      print('MESSAGE: ${e.message}');
-      print('PLUGIN: ${e.plugin}');
-
       return Left(ServerAuthFailure(e.message ?? 'خطأ في الاتصال بالخادم'));
-    } catch (e, stackTrace) {
-      print('🔥 UNKNOWN REGISTER ERROR');
-      print('ERROR: $e');
-      print('TYPE: ${e.runtimeType}');
-      print('STACKTRACE: $stackTrace');
-
+    } catch (e) {
       return Left(ServerAuthFailure(e.toString()));
     }
   }

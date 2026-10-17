@@ -189,8 +189,8 @@ class _ChatSessionsDrawer extends StatelessWidget {
                         itemCount: sessions.length,
                         itemBuilder: (context, index) {
                           final session = sessions[index];
-                          final id = session['id'] as String? ?? '';
-                          final title = session['title'] as String? ?? 'محادثة';
+                          final id = session.id;
+                          final title = session.title;
 
                           return ListTile(
                             leading: const Icon(Icons.chat_bubble_outline),
@@ -331,6 +331,16 @@ class _ChatMessagesListState extends State<_ChatMessagesList> {
     );
   }
 }
+/////////////////////////////////////////////////////////
+///
+///
+///
+///
+///
+///
+///
+///
+///
 
 class _LoadingOlderMessagesIndicator extends StatelessWidget {
   const _LoadingOlderMessagesIndicator();

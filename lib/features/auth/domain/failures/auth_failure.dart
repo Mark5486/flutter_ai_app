@@ -12,41 +12,40 @@ abstract class AuthFailure extends Equatable {
 
 class InvalidEmailPasswordFailure extends AuthFailure {
   const InvalidEmailPasswordFailure([
-    String message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-  ]) : super(message);
+    super.message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+  ]);
 }
 
 class EmailAlreadyInUseFailure extends AuthFailure {
   const EmailAlreadyInUseFailure([
-    String message = 'البريد الإلكتروني مُسجّل بالفعل بحساب آخر',
-  ]) : super(message);
+    super.message = 'البريد الإلكتروني مُسجّل بالفعل بحساب آخر',
+  ]);
 }
 
 class WeakPasswordFailure extends AuthFailure {
   const WeakPasswordFailure([
-    String message = 'كلمة المرور ضعيفة جداً، يرجى اختيار كلمة مرور أقوى',
-  ]) : super(message);
+    super.message = 'كلمة المرور ضعيفة جداً، يرجى اختيار كلمة مرور أقوى',
+  ]);
 }
 
 class UserNotFoundFailure extends AuthFailure {
   const UserNotFoundFailure([
-    String message = 'لم يتم العثور على حساب مرتبطة بهذا البريد',
-  ]) : super(message);
+    super.message = 'لم يتم العثور على حساب مرتبطة بهذا البريد',
+  ]);
 }
 
 class GoogleSignInCancelledFailure extends AuthFailure {
   const GoogleSignInCancelledFailure([
-    String message = 'تم إلغاء عملية تسجيل الدخول عبر Google',
-  ]) : super(message);
+    super.message = 'تم إلغاء عملية تسجيل الدخول عبر Google',
+  ]);
 }
 
 class NetworkAuthFailure extends AuthFailure {
   const NetworkAuthFailure([
-    String message = 'تحقق من الاتصال بالإنترنت وحاول مرة أخرى',
-  ]) : super(message);
+    super.message = 'تحقق من الاتصال بالإنترنت وحاول مرة أخرى',
+  ]);
 }
 
 class ServerAuthFailure extends AuthFailure {
-  const ServerAuthFailure(String message, {String? code})
-    : super(message, code: code);
+  const ServerAuthFailure(super.message, {super.code});
 }

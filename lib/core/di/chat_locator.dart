@@ -1,4 +1,7 @@
 import 'package:flutter_ai_app/core/di/attachment_locator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../../features/chat/data/datasources/chat_remote_data_source.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
@@ -19,7 +22,11 @@ import '../../features/chat/presentation/cubit/chat_cubit.dart';
 
 void setupChatDependencies() {
   getIt.registerLazySingleton<IChatRemoteDataSource>(
-    () => ChatRemoteDataSourceImpl(),
+    () => ChatRemoteDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+      auth: getIt<FirebaseAuth>(),
+      storage: getIt<FirebaseStorage>(),
+    ),
   );
 
   getIt.registerLazySingleton<IChatRepository>(

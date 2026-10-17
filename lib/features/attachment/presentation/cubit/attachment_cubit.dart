@@ -1,4 +1,4 @@
-import 'package:flutter_ai_app/features/attachment/domain/usecases/PickImage_attachment.dart';
+import 'package:flutter_ai_app/features/attachment/domain/usecases/pick_image_attachment_use_case.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'attachment_state.dart';

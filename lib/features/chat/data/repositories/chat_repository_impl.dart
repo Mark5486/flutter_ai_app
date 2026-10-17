@@ -1,8 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter_ai_app/features/audio/domain/entity/audio_entity.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../attachment/domain/entity/attachment_entity.dart';
 import '../../domain/entities/chat_message.dart';
+import '../../domain/entities/chat_session.dart';
 import '../../domain/repositories/i_chat_repository.dart';
 import '../datasources/chat_remote_data_source.dart';
 
@@ -12,15 +14,14 @@ class ChatRepositoryImpl implements IChatRepository {
   ChatRepositoryImpl(this.remoteDataSource);
 
   @override
-  Stream<Either<Failure, List<Map<String, dynamic>>>> getChatSessions() {
-    return remoteDataSource
-        .getChatSessions()
-        .map<Either<Failure, List<Map<String, dynamic>>>>(
-          (sessions) => Right(sessions),
-        )
-        .handleError((error) {
-          return Left(ServerFailure(error.toString()));
-        });
+  Stream<Either<Failure, List<ChatSession>>> getChatSessions() async* {
+    try {
+      await for (final sessions in remoteDataSource.getChatSessions()) {
+        yield Right(sessions.map((model) => model.toEntity()).toList());
+      }
+    } catch (error) {
+      yield Left(ServerFailure(error.toString()));
+    }
   }
 
   @override
@@ -90,9 +91,15 @@ class ChatRepositoryImpl implements IChatRepository {
     String chatId,
     String text, {
     AttachmentEntity? attachment,
+    AudioEntity? audio,
   }) async {
     try {
-      await remoteDataSource.sendMessage(chatId, text, attachment: attachment);
+      await remoteDataSource.sendMessage(
+        chatId,
+        text,
+        attachment: attachment,
+        audio: audio,
+      );
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

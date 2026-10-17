@@ -5,6 +5,7 @@ import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/auth_he
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_primary_button.dart';
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_text_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_ai_app/core/utils/validators.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -32,7 +33,7 @@ class _RegisterFormState extends State<RegisterForm> {
       context.read<AuthCubit>().registerWithEmail(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
     }
   }
@@ -57,11 +58,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 controller: _nameController,
                 label: 'الاسم الكامل',
                 prefixIcon: Icons.person_outline,
-                validator:
-                    (val) =>
-                        val != null && val.trim().isNotEmpty
-                            ? null
-                            : 'أدخل الاسم',
+                validator: Validators.name,
               ),
               const SizedBox(height: 16),
               CustomTextField(
@@ -69,11 +66,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 label: 'البريد الإلكتروني',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                validator:
-                    (val) =>
-                        val != null && val.contains('@')
-                            ? null
-                            : 'بريد غير صالح',
+                validator: Validators.email,
               ),
               const SizedBox(height: 16),
               CustomTextField(
@@ -81,11 +74,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 label: 'كلمة المرور',
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
-                validator:
-                    (val) =>
-                        val != null && val.length >= 6
-                            ? null
-                            : 'كلمة المرور قصيرة',
+                validator: Validators.password,
               ),
               const SizedBox(height: 24),
               CustomPrimaryButton(

@@ -1,11 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter_ai_app/features/audio/domain/entity/audio_entity.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../attachment/domain/entity/attachment_entity.dart';
 import '../entities/chat_message.dart';
+import '../entities/chat_session.dart';
 
 abstract class IChatRepository {
-  Stream<Either<Failure, List<Map<String, dynamic>>>> getChatSessions();
+  Stream<Either<Failure, List<ChatSession>>> getChatSessions();
 
   Future<Either<Failure, String>> createNewChat();
 
@@ -25,6 +27,7 @@ abstract class IChatRepository {
     String chatId,
     String text, {
     AttachmentEntity? attachment,
+    AudioEntity? audio,
   });
 
   Future<Either<Failure, void>> retryMessage(String chatId, String messageId);

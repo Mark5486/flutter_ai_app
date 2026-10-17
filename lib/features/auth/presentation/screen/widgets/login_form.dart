@@ -7,6 +7,7 @@ import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_social_button.dart';
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_text_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_ai_app/core/utils/validators.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -31,7 +32,7 @@ class _LoginFormState extends State<LoginForm> {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().loginWithEmail(
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
     }
   }
@@ -57,11 +58,7 @@ class _LoginFormState extends State<LoginForm> {
                 label: 'البريد الإلكتروني',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                validator:
-                    (val) =>
-                        val != null && val.contains('@')
-                            ? null
-                            : 'بريد غير صالح',
+                validator: Validators.email,
               ),
               const SizedBox(height: 16),
               CustomTextField(
@@ -70,10 +67,10 @@ class _LoginFormState extends State<LoginForm> {
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
                 validator:
-                    (val) =>
-                        val != null && val.length >= 6
-                            ? null
-                            : 'كلمة المرور قصيرة',
+                    (value) => Validators.required(
+                      value,
+                      message: 'كلمة المرور مطلوبة',
+                    ),
               ),
               const SizedBox(height: 24),
               CustomPrimaryButton(

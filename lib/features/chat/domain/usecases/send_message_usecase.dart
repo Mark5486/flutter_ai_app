@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../attachment/domain/entity/attachment_entity.dart';
+import '../../../audio/domain/entity/audio_entity.dart';
 import '../repositories/i_chat_repository.dart';
 
 class SendMessageUseCase {
@@ -13,12 +14,13 @@ class SendMessageUseCase {
     required String chatId,
     required String text,
     AttachmentEntity? attachment,
+    AudioEntity? audio,
   }) async {
     if (chatId.isEmpty) {
       return Left(ServerFailure('معرف المحادثة غير صالح'));
     }
 
-    if (text.trim().isEmpty && attachment == null) {
+    if (text.trim().isEmpty && attachment == null && audio == null) {
       return Left(ServerFailure('لا يمكن إرسال رسالة فارغة'));
     }
 
@@ -26,6 +28,7 @@ class SendMessageUseCase {
       chatId,
       text.trim(),
       attachment: attachment,
+      audio: audio,
     );
   }
 }

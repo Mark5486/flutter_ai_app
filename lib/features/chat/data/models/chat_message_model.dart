@@ -9,6 +9,7 @@ class ChatMessageModel extends ChatMessage {
     super.status,
     super.imageUrl,
     super.imageMimeType,
+    super.audioUrl,
   });
 
   factory ChatMessageModel.fromMap(Map<String, dynamic> map, [String? docId]) {
@@ -19,6 +20,7 @@ class ChatMessageModel extends ChatMessage {
       status: _statusFromMap(map['status']),
       imageUrl: map['imageUrl'] as String?,
       imageMimeType: map['imageMimeType'] as String?,
+      audioUrl: map['audioUrl'] as String?,
       timestamp:
           map['timestamp'] != null
               ? (map['timestamp'] as dynamic).toDate() as DateTime
@@ -52,6 +54,7 @@ class ChatMessageModel extends ChatMessage {
       'timestamp': timestamp,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (imageMimeType != null) 'imageMimeType': imageMimeType,
+      if (audioUrl != null) 'audioUrl': audioUrl,
     };
   }
 
@@ -64,6 +67,7 @@ class ChatMessageModel extends ChatMessage {
       timestamp: timestamp,
       imageUrl: imageUrl,
       imageMimeType: imageMimeType,
+      audioUrl: audioUrl,
     );
   }
 
