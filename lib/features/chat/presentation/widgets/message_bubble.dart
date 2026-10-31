@@ -160,8 +160,8 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-/// نافذة تعديل الرسالة — الـ controller تملكه الـ State وتتخلص منه
-/// بعد انتهاء أنيميشن الإغلاق بالكامل (وليس قبله).
+
+
 class _EditMessageDialog extends StatefulWidget {
   const _EditMessageDialog({required this.initialText, required this.onSave});
 
@@ -238,8 +238,8 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
   }
 }
 
-/// نص رسالة المستخدم بعد التعديل: يعرض النص الجديد مع سهم صغير
-/// يكشف النص الأصلي ويخفي الجديد، والعكس عند الضغط عليه مرة أخرى.
+
+
 class _EditedMessageText extends StatefulWidget {
   const _EditedMessageText({required this.message});
 

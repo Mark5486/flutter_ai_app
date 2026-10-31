@@ -52,8 +52,8 @@ class ChatView extends StatelessWidget {
           child: SafeArea(
             child: Center(
               child: ConstrainedBox(
-                // على الشاشات الكبيرة (ويب/تابلت) نثبّت عرض عمود المحادثة
-                // حتى تبقى الواجهة مريحة للقراءة وعلى أي مقاس شاشة.
+                
+                
                 constraints: const BoxConstraints(maxWidth: 880),
                 child: Column(
                   children: [

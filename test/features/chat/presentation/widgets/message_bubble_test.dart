@@ -114,11 +114,11 @@ void main() {
         ),
       ));
 
-      // الوضع الافتراضي: النص الجديد ظاهر والقديم مخفي.
+      
       expect(find.text('النص بعد التعديل'), findsOneWidget);
       expect(find.text('النص قبل التعديل'), findsNothing);
 
-      // الضغط على السهم يجلي القديم ويخفي الجديد.
+      
       await tester.tap(find.text('معدّلة'));
       await tester.pumpAndSettle();
 
@@ -126,7 +126,7 @@ void main() {
       expect(find.text('النص بعد التعديل'), findsNothing);
       expect(find.text('المعدّلة'), findsOneWidget);
 
-      // الضغط مرة أخرى يرجّع النص الجديد.
+      
       await tester.tap(find.text('المعدّلة'));
       await tester.pumpAndSettle();
 

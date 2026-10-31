@@ -1,4 +1,4 @@
-// features/chat/presentation/cubit/chat_state.dart
+
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../../attachment/domain/entity/attachment_entity.dart';

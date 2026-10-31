@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.dark(),
         initialRoute: AppRoutes.initial,
         onGenerateRoute: routingService.generateRoute,
-        // على الويب والديسكتوب: تمرير القوائم بالسحب بالماوس مثل التطبيقات الحديثة.
+        
         scrollBehavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {
             PointerDeviceKind.touch,
@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
             PointerDeviceKind.stylus,
           },
         ),
-        // حماية من أحجام الخطوط المبالغ فيها حتى لا تتكسر الواجهة على أي جهاز.
+        
         builder:
             (context, child) => MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.4,

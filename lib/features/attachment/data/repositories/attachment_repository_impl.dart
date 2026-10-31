@@ -18,7 +18,7 @@ class AttachmentRepositoryImpl implements IAttachmentRepository {
 
       return Right(model?.toEntity());
     } on AttachmentValidationException catch (e) {
-      // رسالة تحقق واضحة (نوع/حجم مرفوض) بدل ما تتحول لخطأ عام.
+      
       return Left((ServerFailure(e.toString())));
     } catch (e) {
       return Left(ServerFailure(e.toString()));

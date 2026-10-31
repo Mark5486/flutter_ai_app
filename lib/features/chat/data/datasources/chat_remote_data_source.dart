@@ -275,7 +275,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     final hasImage = data[_fieldImageUrl] != null;
     final imageMimeType = data[_fieldImageMimeType] as String?;
 
-    // نحفظ النص قبل التعديل مرة واحدة فقط — أول تعديل يثبّت "النص الأصلي".
+    
     final previousOriginal = data[_fieldOriginalText] as String?;
     final textBeforeEdit = data[_fieldText] as String? ?? '';
 
@@ -552,7 +552,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   Future<_PreparedImage> _prepareImageData(Uint8List bytes) async {
     var compressed = bytes;
 
-    // على الويب لا يتوفر ملحق الضغط — نستخدم الصورة الأصلية مع احترام حد الحجم.
+    
     if (!kIsWeb) {
       try {
         final firstPass = await FlutterImageCompress.compressWithList(

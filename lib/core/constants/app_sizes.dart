@@ -1,41 +1,41 @@
 abstract final class AppSizes {
-  // Padding & Margin
+  
   static const double paddingExtraSmall = 4;
   static const double paddingSmall = 8;
   static const double paddingMedium = 16;
   static const double paddingLarge = 24;
   static const double paddingExtraLarge = 32;
 
-  // Border Radius
+  
   static const double radiusSmall = 8;
   static const double radiusMedium = 12;
   static const double radiusLarge = 16;
   static const double radiusExtraLarge = 24;
   static const double radiusCircular = 999;
 
-  // Icons
+  
   static const double iconSmall = 18;
   static const double iconMedium = 24;
   static const double iconLarge = 32;
   static const double iconExtraLarge = 48;
 
-  // Input & Buttons
+  
   static const double buttonHeight = 52;
   static const double textFieldHeight = 56;
 
-  // Layout Constraints
+  
   static const double maxContentWidth = 900;
   static const double maxAuthWidth = 460;
   static const double messageMaxWidth = 620;
   static const double appBarHeight = 64;
 
-  // Avatars & Media Previews
+  
   static const double avatarSmall = 32;
   static const double avatarMedium = 44;
   static const double avatarLarge = 56;
   static const double mediaPreviewHeight = 120;
 
-  // Animations & Elevations
+  
   static const double elevationLow = 2;
   static const double elevationMedium = 6;
   static const double elevationHigh = 12;

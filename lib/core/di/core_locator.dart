@@ -84,7 +84,7 @@ Future<void> setupCoreLocator() async {
     getIt.registerLazySingleton<RoutingService>(() => RoutingServiceImpl());
   }
 
-  // AI credentials belong on the trusted backend, never in the client app.
+  
   if (!getIt.isRegistered<VoiceInputService>()) {
     getIt.registerLazySingleton<VoiceInputService>(
       () => VoiceInputServiceImpl(),

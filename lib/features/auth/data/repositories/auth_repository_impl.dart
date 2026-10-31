@@ -122,7 +122,7 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
   }
 
-  /// Exception Handler Mapping
+  
   AuthFailure _handleFirebaseAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':

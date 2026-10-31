@@ -7,7 +7,7 @@ class AttachmentValidator {
     'image/webp',
   };
 
-  static const int maxImageSizeBytes = 5 * 1024 * 1024; // 5 MB
+  static const int maxImageSizeBytes = 5 * 1024 * 1024; 
 
   static void validateImage({
     required String mimeType,

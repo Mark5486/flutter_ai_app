@@ -50,7 +50,7 @@ class ChatMessage extends Equatable {
 
   final bool isEdited;
 
-  /// النص الأصلي قبل أول تعديل — يُستخدم لعرضه عند الضغط على سهم "معدّلة".
+  
   final String? originalText;
 
   final DateTime? editedAt;

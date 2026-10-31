@@ -15,7 +15,7 @@ class MessageSources extends StatelessWidget {
       return;
     }
 
-    // نلتقط الـ messenger قبل أي await حتى لا نستخدم الـ context بعد فجوة غير متزامنة.
+    
     final messenger = ScaffoldMessenger.of(context);
 
     try {
