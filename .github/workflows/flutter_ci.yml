@@ -1,41 +1,90 @@
-
+# ============================================================
+#  Flutter CI — بيشتغل على كل push للـ main وكل Pull Request
+#  1) flutter analyze   → أي مشكلة في الكود توقف الـ pipeline
+#  2) flutter test      → كل الاختبارات لازم تعدى خضرا
+#  3) على الـ main بس: build APK debug وترفعه كـ artifact
+# ============================================================
 name: Flutter CI
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # نفس نسخة الـ SDK اللي في pubspec (Dart >=3.7.2 = Flutter 3.29.x)
+  FLUTTER_VERSION: '3.29.2'
 
 jobs:
-  test:
-    name: Analyze & Test
+  analyze-and-test:
+    name: Analyze + Test
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      # 1. Get the project source code
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Set up Flutter
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
-      # 3. Install project dependencies
       - name: Install dependencies
         run: flutter pub get
 
-      # 4. Check code quality
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze
 
-      # 5. Run automated tests
-      - name: Run tests
-        run: flutter test
+      # تحذير تنسيق مش حاجز — عايزين تعوّد نفسك تدريجيًا على التنسيق النضيف.
+      # لما تظبط كل الملفات: شغّل "dart format ." مرة واحدة وشيل continue-on-error.
+      - name: Format check (non-blocking warning)
+        run: dart format --output=none --set-exit-if-changed .
+        continue-on-error: true
 
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+
+  build-android:
+    name: Build Android (Debug APK)
+    needs: analyze-and-test
+    # بنبني بس لما الكود يوصل للـ main — الـ Pull Requests بتتحلل من غير build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ai-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk

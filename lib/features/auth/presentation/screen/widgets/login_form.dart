@@ -52,7 +52,7 @@ class _LoginFormState extends State<LoginForm> {
                 title: 'مرحباً بك مجدداً',
                 subtitle: 'سجل دخولك لمتابعة استخدام المساعد الذكي',
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 36),
               CustomTextField(
                 controller: _emailController,
                 label: 'البريد الإلكتروني',
@@ -72,25 +72,59 @@ class _LoginFormState extends State<LoginForm> {
                       message: 'كلمة المرور مطلوبة',
                     ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               CustomPrimaryButton(
                 text: 'تسجيل الدخول',
                 isLoading: isLoading,
                 onPressed: _onLoginPressed,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'أو',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 18),
               CustomSocialButton(
                 label: 'تسجيل بواسطة Google',
                 icon: Icons.g_mobiledata,
                 isLoading: isLoading,
                 onPressed: () => context.read<AuthCubit>().signInWithGoogle(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, AppRoutes.register);
                 },
-                child: const Text('ليس لديك حساب؟ أنشئ حساباً الآن'),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'ليس لديك حساب؟ ',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                    children: const [
+                      TextSpan(
+                        text: 'أنشئ حساباً الآن',
+                        style: TextStyle(
+                          color: Color(0xFF9F7BFF),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

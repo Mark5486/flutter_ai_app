@@ -8,7 +8,7 @@ Flutter chat application with Firebase authentication, Firestore-backed conversa
 - Per-user chat sessions and real-time message updates in Cloud Firestore.
 - Image attachments stored in Firebase Storage and included with AI requests.
 - Message retry, deletion, and cursor-based older-message pagination.
-- Audio recording and Firebase Storage upload primitives (audio transcription/generation is not currently wired into the chat backend).
+- Audio recording, Firebase Storage upload, Arabic transcription through a separate Cloudflare Worker, transcript-aware AI messages, and in-chat playback.
 - Arabic interface, Cubit state management, GetIt dependency injection, and Clean Architecture feature boundaries.
 
 ## Architecture
@@ -20,8 +20,9 @@ Features are divided into `domain`, `data`, and `presentation` layers. Domain re
 1. Install Flutter (Dart SDK `>=3.7.2 <4.0.0`) and configure a Firebase project for the platforms you target.
 2. Generate or provide `lib/firebase_options.dart` with FlutterFire CLI. Do not commit service-account credentials or private API keys.
 3. Configure Firebase Authentication providers, Firestore, and Storage. Deploy the included rules with `firebase deploy --only firestore:rules,storage` after selecting your own Firebase project.
-4. Configure the AI Worker endpoint and secrets on the server. The client must not contain provider API keys.
-5. Run `flutter pub get`, then `flutter run`.
+4. Configure the existing AI Worker endpoint and secrets on the server. The client must not contain provider API keys.
+5. Deploy the separate transcription Worker and configure `AUDIO_TRANSCRIPTION_API_URL`; follow `backend/audio_transcription_worker/README.md`.
+6. Run `flutter pub get`, then `flutter run`.
 
 ## Firebase data layout
 

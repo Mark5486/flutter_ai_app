@@ -91,12 +91,12 @@ class ChatCubit extends Cubit<ChatState> {
               chatId: activeChatId,
               hasMore:
                   previousState is ChatSuccess
-                      ? previousState.hasMore
-                      : liveMessages.length >= _pageSize,
+                  ? previousState.hasMore
+                  : liveMessages.length >= _pageSize,
               isLoadingMore:
                   previousState is ChatSuccess
-                      ? previousState.isLoadingMore
-                      : false,
+                  ? previousState.isLoadingMore
+                  : false,
               isSending: _isSending,
             ),
           );
@@ -157,6 +157,8 @@ class ChatCubit extends Cubit<ChatState> {
     String text, {
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     if (_isSending ||
         (text.trim().isEmpty && attachment == null && audio == null)) {
@@ -186,6 +188,8 @@ class ChatCubit extends Cubit<ChatState> {
         text: text.trim(),
         attachment: attachment,
         audio: audio,
+        webSearch: webSearch,
+        thinking: thinking,
       );
 
       result.fold(
@@ -194,7 +198,7 @@ class ChatCubit extends Cubit<ChatState> {
       );
     } finally {
       _isSending = false;
-      _clearSendingState();
+      _finishSendingState();
     }
   }
 
@@ -218,7 +222,7 @@ class ChatCubit extends Cubit<ChatState> {
       );
     } finally {
       _isSending = false;
-      _clearSendingState();
+      _finishSendingState();
     }
   }
 
@@ -235,6 +239,13 @@ class ChatCubit extends Cubit<ChatState> {
 
     if (currentState is ChatSuccess && currentState.isSending) {
       emit(currentState.copyWith(isSending: false, clearSendError: true));
+    }
+  }
+
+  void _finishSendingState() {
+    final currentState = state;
+    if (currentState is ChatSuccess && currentState.isSending) {
+      emit(currentState.copyWith(isSending: false));
     }
   }
 

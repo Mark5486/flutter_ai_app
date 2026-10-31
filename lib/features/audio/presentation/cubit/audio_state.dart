@@ -34,12 +34,13 @@ class AudioUploading extends AudioState {
 }
 
 class AudioReady extends AudioState {
-  const AudioReady(this.audio);
+  const AudioReady(this.audio, this.transcript);
 
   final AudioEntity audio;
+  final String transcript;
 
   @override
-  List<Object?> get props => [audio];
+  List<Object?> get props => [audio, transcript];
 }
 
 class AudioFailure extends AudioState {

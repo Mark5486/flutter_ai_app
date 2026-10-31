@@ -18,7 +18,7 @@ service firebase.storage {
       allow create, update: if signedInAs(uid)
         && request.resource.size > 0
         && request.resource.size <= 20 * 1024 * 1024
-        && request.resource.contentType == 'audio/mp4';
+        && request.resource.contentType.matches('audio/(mp4|webm)');
     }
   }
 }

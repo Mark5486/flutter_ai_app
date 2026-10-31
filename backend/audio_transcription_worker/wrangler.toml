@@ -1,0 +1,8 @@
+name = "flutter-ai-audio-transcription"
+main = "src/index.js"
+compatibility_date = "2026-10-19"
+workers_dev = true
+preview_urls = false
+
+[vars]
+FIREBASE_PROJECT_ID = "fottballlove-25dbe"

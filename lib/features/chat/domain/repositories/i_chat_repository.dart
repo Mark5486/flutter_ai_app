@@ -28,11 +28,17 @@ abstract class IChatRepository {
     String text, {
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch,
+    bool thinking,
   });
 
   Future<Either<Failure, void>> retryMessage(String chatId, String messageId);
 
-  Future<Either<Failure, void>> deleteMessage(String chatId, String messageId);
+  Future<Either<Failure, void>> editMessage(
+    String chatId,
+    String messageId,
+    String newText,
+  );
 
   Future<Either<Failure, void>> deleteChatSession(String chatId);
 }

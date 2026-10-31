@@ -1,4 +1,5 @@
 import 'package:flutter_ai_app/features/chat/domain/entities/chat_message.dart';
+import 'package:flutter_ai_app/features/chat/domain/entities/message_source.dart';
 
 class ChatMessageModel extends ChatMessage {
   const ChatMessageModel({
@@ -10,6 +11,11 @@ class ChatMessageModel extends ChatMessage {
     super.imageUrl,
     super.imageMimeType,
     super.audioUrl,
+    super.thoughts,
+    super.sources,
+    super.isEdited,
+    super.originalText,
+    super.editedAt,
   });
 
   factory ChatMessageModel.fromMap(Map<String, dynamic> map, [String? docId]) {
@@ -21,6 +27,13 @@ class ChatMessageModel extends ChatMessage {
       imageUrl: map['imageUrl'] as String?,
       imageMimeType: map['imageMimeType'] as String?,
       audioUrl: map['audioUrl'] as String?,
+      thoughts: map['thoughts'] as String?,
+      sources: _sourcesFromMap(map['sources']),
+      isEdited: map['isEdited'] == true,
+      originalText: map['originalText'] as String?,
+      editedAt: map['editedAt'] != null
+          ? (map['editedAt'] as dynamic).toDate() as DateTime
+          : null,
       timestamp:
           map['timestamp'] != null
               ? (map['timestamp'] as dynamic).toDate() as DateTime
@@ -46,6 +59,29 @@ class ChatMessageModel extends ChatMessage {
     }
   }
 
+  static List<MessageSource> _sourcesFromMap(dynamic value) {
+    if (value is! List) return const [];
+
+    final sources = <MessageSource>[];
+
+    for (final item in value) {
+      if (item is Map<String, dynamic> &&
+          item['title'] is String &&
+          item['url'] is String &&
+          (item['title'] as String).trim().isNotEmpty &&
+          (item['url'] as String).trim().isNotEmpty) {
+        sources.add(
+          MessageSource(
+            title: item['title'] as String,
+            url: item['url'] as String,
+          ),
+        );
+      }
+    }
+
+    return List.unmodifiable(sources);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'text': text,
@@ -55,6 +91,12 @@ class ChatMessageModel extends ChatMessage {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (imageMimeType != null) 'imageMimeType': imageMimeType,
       if (audioUrl != null) 'audioUrl': audioUrl,
+      if (thoughts != null) 'thoughts': thoughts,
+      if (sources.isNotEmpty)
+        'sources': sources.map((source) => source.toMap()).toList(),
+      if (isEdited) 'isEdited': true,
+      if (originalText != null) 'originalText': originalText,
+      if (editedAt != null) 'editedAt': editedAt,
     };
   }
 
@@ -68,6 +110,11 @@ class ChatMessageModel extends ChatMessage {
       imageUrl: imageUrl,
       imageMimeType: imageMimeType,
       audioUrl: audioUrl,
+      thoughts: thoughts,
+      sources: sources,
+      isEdited: isEdited,
+      originalText: originalText,
+      editedAt: editedAt,
     );
   }
 

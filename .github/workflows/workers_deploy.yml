@@ -1,0 +1,72 @@
+
+# ============================================================
+#  Deploy Cloudflare Workers
+#  - تلقائي: أي push للـ main بيلمس ملفات الـ workers
+#  - يدوي: من تاب Actions تختار chat أو audio أو both
+#
+#  المطلوب منك مرة واحدة (Settings → Secrets and variables → Actions):
+#  - CF_API_TOKEN   → التوكن بتاع Cloudflare (نفس اللي استخدمناه في الإعداد)
+#  - CF_ACCOUNT_ID  → رقم الحساب بتاعك (من داشبورد Cloudflare الرئيسية)
+#
+#  ملحوظة: الـ secrets الحساسة (GEMINI_API_KEY / GROQ_API_KEY / ...)
+#  عايشة جوه Cloudflare نفسه — الـ deploy مش بيلمسها خالص.
+# ============================================================
+name: Deploy Cloudflare Workers
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'أي Worker هننشر؟'
+        required: true
+        default: both
+        type: choice
+        options:
+          - chat
+          - audio
+          - both
+  push:
+    branches: [main]
+    paths:
+      - 'backend/chat_worker/**'
+      - 'backend/audio_transcription_worker/**'
+
+concurrency:
+  group: workers-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-chat:
+    name: Deploy flutter-ai-backend (chat)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # على push: بينشر لو ملفاته اتغيرت — وعلى التشغيل اليدوي بيحترم اختيارك
+    if: github.event_name == 'push' || inputs.target == 'chat' || inputs.target == 'both'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy chat worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: backend/chat_worker
+          command: deploy
+
+  deploy-audio:
+    name: Deploy flutter-ai-audio-transcription (audio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' || inputs.target == 'audio' || inputs.target == 'both'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy audio worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: backend/audio_transcription_worker
+          command: deploy

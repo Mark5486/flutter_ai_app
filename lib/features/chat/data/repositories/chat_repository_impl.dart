@@ -34,20 +34,6 @@ class ChatRepositoryImpl implements IChatRepository {
     }
   }
 
-  // @override
-  //Stream<Either<Failure, List<ChatMessage>>> getMessages(
-  // String chatId, {
-  //int limit = 30,
-  //}) {
-  //return remoteDataSource
-  //  .getMessages(chatId, limit: limit)
-  //.map<Either<Failure, List<ChatMessage>>>(
-  // (models) => Right(models.map((model) => model.toEntity()).toList()),
-  // )
-  // .handleError((error) {
-  //  return Left(ServerFailure(error.toString()));
-  // });
-  // }
   @override
   Stream<Either<Failure, List<ChatMessage>>> getMessages(
     String chatId, {
@@ -92,6 +78,8 @@ class ChatRepositoryImpl implements IChatRepository {
     String text, {
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     try {
       await remoteDataSource.sendMessage(
@@ -99,6 +87,8 @@ class ChatRepositoryImpl implements IChatRepository {
         text,
         attachment: attachment,
         audio: audio,
+        webSearch: webSearch,
+        thinking: thinking,
       );
       return const Right(null);
     } catch (e) {
@@ -120,12 +110,13 @@ class ChatRepositoryImpl implements IChatRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteMessage(
+  Future<Either<Failure, void>> editMessage(
     String chatId,
     String messageId,
+    String newText,
   ) async {
     try {
-      await remoteDataSource.deleteMessage(chatId, messageId);
+      await remoteDataSource.editMessage(chatId, messageId, newText);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

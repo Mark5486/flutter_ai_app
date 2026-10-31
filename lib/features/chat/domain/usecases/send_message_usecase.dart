@@ -15,6 +15,8 @@ class SendMessageUseCase {
     required String text,
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     if (chatId.isEmpty) {
       return Left(ServerFailure('معرف المحادثة غير صالح'));
@@ -29,6 +31,8 @@ class SendMessageUseCase {
       text.trim(),
       attachment: attachment,
       audio: audio,
+      webSearch: webSearch,
+      thinking: thinking,
     );
   }
 }

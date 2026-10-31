@@ -3,6 +3,7 @@ import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_cubit.dart'
 import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/auth_header.dart';
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_primary_button.dart';
+import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_social_button.dart';
 import 'package:flutter_ai_app/features/auth/presentation/screen/widgets/custom_text_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_ai_app/core/utils/validators.dart';
@@ -53,7 +54,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 subtitle:
                     'قم بإنشاء حسابك للاستفادة من مميزات الذكاء الاصطناعي',
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 36),
               CustomTextField(
                 controller: _nameController,
                 label: 'الاسم الكامل',
@@ -76,11 +77,35 @@ class _RegisterFormState extends State<RegisterForm> {
                 isPassword: true,
                 validator: Validators.password,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               CustomPrimaryButton(
                 text: 'إنشاء الحساب',
                 isLoading: isLoading,
                 onPressed: _onRegisterPressed,
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'أو',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 18),
+              CustomSocialButton(
+                label: 'التسجيل بواسطة Google',
+                icon: Icons.g_mobiledata,
+                isLoading: isLoading,
+                onPressed: () => context.read<AuthCubit>().signInWithGoogle(),
               ),
             ],
           ),

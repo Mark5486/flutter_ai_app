@@ -7,14 +7,18 @@ abstract class ChatActorState extends Equatable {
   List<Object?> get props => [];
 }
 
-class ChatActorInitial extends ChatActorState {}
+class ChatActorInitial extends ChatActorState {
+  const ChatActorInitial();
+}
 
-class ChatActorLoading extends ChatActorState {}
+class ChatActorLoading extends ChatActorState {
+  const ChatActorLoading();
+}
 
-class ChatActorDeleteSuccess extends ChatActorState {
+class ChatActorEditSuccess extends ChatActorState {
   final String messageId;
 
-  const ChatActorDeleteSuccess(this.messageId);
+  const ChatActorEditSuccess(this.messageId);
 
   @override
   List<Object?> get props => [messageId];

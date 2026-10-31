@@ -1,8 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ai_app/core/constants/app_routes.dart';
 import 'package:flutter_ai_app/core/di/auth_locator.dart';
 import 'package:flutter_ai_app/core/services/routing_service.dart';
+import 'package:flutter_ai_app/core/theme/app_theme.dart';
 import 'package:flutter_ai_app/core/utils/service_locator.dart';
 import 'package:flutter_ai_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_ai_app/firebase_options.dart';
@@ -30,15 +32,24 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'AI Smart Assistant',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6750A4),
-            brightness: Brightness.dark,
-          ),
-        ),
+        theme: AppTheme.dark(),
         initialRoute: AppRoutes.initial,
         onGenerateRoute: routingService.generateRoute,
+        // على الويب والديسكتوب: تمرير القوائم بالسحب بالماوس مثل التطبيقات الحديثة.
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+            PointerDeviceKind.stylus,
+          },
+        ),
+        // حماية من أحجام الخطوط المبالغ فيها حتى لا تتكسر الواجهة على أي جهاز.
+        builder:
+            (context, child) => MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.4,
+              child: child!,
+            ),
       ),
     );
   }

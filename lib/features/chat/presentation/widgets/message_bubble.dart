@@ -3,6 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/chat_message.dart';
 import '../cubit/chat_actor_cubit.dart';
+import 'message_parts/message_audio_player.dart';
+import 'message_parts/message_image.dart';
+import 'message_parts/message_sources.dart';
+import 'message_parts/message_status_row.dart';
+import 'message_parts/message_thoughts.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -20,196 +25,314 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.sender == MessageSender.user;
-    final theme = Theme.of(context);
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: () => _showActions(context),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 320),
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          padding: EdgeInsets.all(message.hasImage ? 6 : 0).add(
-            message.text.trim().isEmpty
-                ? EdgeInsets.zero
-                : const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          ),
-          decoration: BoxDecoration(
-            color: isUser ? theme.colorScheme.primary : Colors.grey.shade800,
-            border:
-                message.isFailed
-                    ? Border.all(color: theme.colorScheme.error, width: 1.5)
-                    : null,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(12),
-              topRight: const Radius.circular(12),
-              bottomLeft: Radius.circular(isUser ? 12 : 0),
-              bottomRight: Radius.circular(isUser ? 0 : 12),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (message.hasImage) _MessageImage(imageUrl: message.imageUrl!),
-              if (message.text.trim().isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: message.hasImage ? 6 : 10,
-                    bottom: 10,
-                    left: message.hasImage ? 2 : 14,
-                    right: message.hasImage ? 2 : 14,
+        onLongPress:
+            message.canBeEdited ? () => _showEditDialog(context) : null,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth =
+                constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : MediaQuery.sizeOf(context).width;
+
+            final maxBubbleWidth =
+                (availableWidth * (isUser ? 0.78 : 0.88))
+                    .clamp(240.0, isUser ? 560.0 : 760.0)
+                    .toDouble();
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              padding: EdgeInsets.all(message.hasImage || message.hasAudio ? 6 : 0).add(
+                message.text.trim().isEmpty
+                    ? EdgeInsets.zero
+                    : const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+              decoration: BoxDecoration(
+                gradient:
+                    isUser
+                        ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF7C5CFF), Color(0xFF5B3DD8)],
+                        )
+                        : null,
+                color:
+                    message.isFailed
+                        ? const Color(0xFF2A1420)
+                        : isUser
+                        ? null
+                        : const Color(0xFF1E1840),
+                border:
+                    message.isFailed
+                        ? Border.all(color: const Color(0xFFFF5C7A), width: 1.2)
+                        : !isUser
+                        ? Border.all(color: Colors.white.withValues(alpha: 0.07))
+                        : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Text(
-                    message.text,
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
-                  ),
+                ],
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 18),
                 ),
-              if (isUser) ...[
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: 6,
-                    left: message.hasImage ? 2 : 14,
-                    right: message.hasImage ? 2 : 14,
-                  ),
-                  child: _MessageStatusRow(
-                    status: message.status,
-                    onRetry: onRetry,
-                  ),
-                ),
-              ],
-            ],
-          ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (message.hasImage) MessageImage(imageUrl: message.imageUrl!),
+                  if (message.hasAudio)
+                    MessageAudioPlayer(audioUrl: message.audioUrl!),
+                  if (message.hasThoughts)
+                    MessageThoughts(thoughts: message.thoughts!),
+                  if (message.text.trim().isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: message.hasImage || message.hasThoughts ? 6 : 10,
+                        bottom: 10,
+                        left: message.hasImage ? 2 : 14,
+                        right: message.hasImage ? 2 : 14,
+                      ),
+                      child:
+                          isUser && message.hasOriginalText
+                              ? _EditedMessageText(message: message)
+                              : Text(
+                                  message.text,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    height: 1.45,
+                                  ),
+                                ),
+                    ),
+                  if (message.hasSources) MessageSources(sources: message.sources),
+                  if (isUser) ...[
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: 6,
+                        left: message.hasImage ? 2 : 14,
+                        right: message.hasImage ? 2 : 14,
+                      ),
+                      child: MessageStatusRow(
+                        status: message.status,
+                        isEdited: message.isEdited,
+                        onRetry: onRetry,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  void _showActions(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _showEditDialog(BuildContext context) async {
+    await showDialog<void>(
       context: context,
-      builder: (_) {
-        return SafeArea(
-          child: ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
-            title: const Text('حذف الرسالة'),
-            onTap: () {
-              Navigator.pop(context);
-              context.read<ChatActorCubit>().deleteMessage(
-                chatId: chatId,
-                messageId: message.id,
-              );
-            },
-          ),
+      builder: (dialogContext) {
+        return _EditMessageDialog(
+          initialText: message.text,
+          onSave: (newText) {
+            context.read<ChatActorCubit>().editMessage(
+              chatId: chatId,
+              messageId: message.id,
+              newText: newText,
+            );
+          },
         );
       },
     );
   }
 }
 
-class _MessageImage extends StatelessWidget {
-  const _MessageImage({required this.imageUrl});
+/// نافذة تعديل الرسالة — الـ controller تملكه الـ State وتتخلص منه
+/// بعد انتهاء أنيميشن الإغلاق بالكامل (وليس قبله).
+class _EditMessageDialog extends StatefulWidget {
+  const _EditMessageDialog({required this.initialText, required this.onSave});
 
-  final String imageUrl;
+  final String initialText;
+  final void Function(String newText) onSave;
+
+  @override
+  State<_EditMessageDialog> createState() => _EditMessageDialogState();
+}
+
+class _EditMessageDialogState extends State<_EditMessageDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-
-          return const SizedBox(
-            height: 180,
-            width: 240,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return const SizedBox(
-            height: 120,
-            width: 200,
-            child: Center(
-              child: Icon(Icons.broken_image_outlined, color: Colors.white70),
-            ),
-          );
-        },
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1E1840),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
+      title: const Text('تعديل الرسالة'),
+      content: TextField(
+        controller: _controller,
+        maxLines: 5,
+        autofocus: true,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: 'اكتب النص الجديد...',
+          border: InputBorder.none,
+          filled: true,
+          fillColor: Color(0xFF151230),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF9F7BFF),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () {
+            final newText = _controller.text.trim();
+            Navigator.pop(context);
+
+            if (newText.isEmpty ||
+                newText == widget.initialText.trim()) {
+              return;
+            }
+
+            widget.onSave(newText);
+          },
+          child: const Text('حفظ'),
+        ),
+      ],
     );
   }
 }
 
-class _MessageStatusRow extends StatelessWidget {
-  const _MessageStatusRow({required this.status, required this.onRetry});
+/// نص رسالة المستخدم بعد التعديل: يعرض النص الجديد مع سهم صغير
+/// يكشف النص الأصلي ويخفي الجديد، والعكس عند الضغط عليه مرة أخرى.
+class _EditedMessageText extends StatefulWidget {
+  const _EditedMessageText({required this.message});
 
-  final MessageStatus status;
-  final VoidCallback? onRetry;
+  final ChatMessage message;
+
+  @override
+  State<_EditedMessageText> createState() => _EditedMessageTextState();
+}
+
+class _EditedMessageTextState extends State<_EditedMessageText> {
+  bool _showingOriginal = false;
 
   @override
   Widget build(BuildContext context) {
-    switch (status) {
-      case MessageStatus.sending:
-        return const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(width: 6),
-            Text(
-              'جارٍ الإرسال',
-              style: TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ],
-        );
+    final showingOriginal = _showingOriginal;
+    final text =
+        showingOriginal
+            ? widget.message.originalText!
+            : widget.message.text;
 
-      case MessageStatus.failed:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 15),
-            const SizedBox(width: 4),
-            const Text(
-              'فشل الإرسال',
-              style: TextStyle(color: Colors.white, fontSize: 11),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: Text(
+            key: ValueKey<bool>(showingOriginal),
+            text,
+            style: TextStyle(
+              color: showingOriginal ? Colors.white60 : Colors.white,
+              fontSize: 15,
+              height: 1.45,
+              fontStyle:
+                  showingOriginal ? FontStyle.italic : FontStyle.normal,
             ),
-            if (onRetry != null) ...[
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: onRetry,
-                child: const Text(
-                  'إعادة المحاولة',
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.underline,
-                    fontSize: 11,
-                  ),
-                ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _EditedTogglePill(
+            showingOriginal: showingOriginal,
+            onToggle:
+                () => setState(() => _showingOriginal = !showingOriginal),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditedTogglePill extends StatelessWidget {
+  const _EditedTogglePill({
+    required this.showingOriginal,
+    required this.onToggle,
+  });
+
+  final bool showingOriginal;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: showingOriginal ? 'عرض النص المعدّل' : 'عرض النص الأصلي',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onToggle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                showingOriginal
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 14,
+                color: Colors.white54,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                showingOriginal ? 'المعدّلة' : 'معدّلة',
+                style: const TextStyle(color: Colors.white54, fontSize: 10),
               ),
             ],
-          ],
-        );
-
-      case MessageStatus.sent:
-        return const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.done, color: Colors.white70, size: 14),
-            SizedBox(width: 4),
-            Text(
-              'تم الإرسال',
-              style: TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ],
-        );
-    }
+          ),
+        ),
+      ),
+    );
   }
 }

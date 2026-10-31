@@ -2,15 +2,20 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_ai_app/features/audio/data/datasources/audio_remote_data_source.dart';
+import 'package:flutter_ai_app/features/audio/data/datasources/audio_transcription_remote_data_source.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entity/audio_entity.dart';
 import '../../domain/repository/audio_repository.dart';
 
 class AudioRepositoryImpl implements IAudioRepository {
-  const AudioRepositoryImpl(this._remoteDataSource);
+  const AudioRepositoryImpl(
+    this._remoteDataSource,
+    this._transcriptionDataSource,
+  );
 
   final IAudioRemoteDataSource _remoteDataSource;
+  final IAudioTranscriptionRemoteDataSource _transcriptionDataSource;
 
   @override
   Future<Either<Failure, void>> startRecording() async {
@@ -51,6 +56,15 @@ class AudioRepositoryImpl implements IAudioRepository {
       final model = await _remoteDataSource.uploadAudio(bytes);
 
       return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> transcribeAudio(Uint8List bytes) async {
+    try {
+      return Right(await _transcriptionDataSource.transcribe(bytes));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

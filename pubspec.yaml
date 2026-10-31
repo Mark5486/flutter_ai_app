@@ -2,7 +2,7 @@ name: flutter_ai_app
 description: "تطبيق ذكاء اصطناعي متكامل مع Firebase، تسجيل صوت، وتحويل كلام لنص"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.7.2 <4.0.0'
@@ -34,12 +34,15 @@ dependencies:
   audioplayers: ^6.6.0
   permission_handler: ^13.0.1
   path_provider: ^2.1.5
+  flutter_image_compress: ^2.3.0  # ⬅️ ضغط الصور قبل تخزينها في Firestore
+  url_launcher: ^6.3.0  # ⬅️ فتح مصادر البحث في المتصفح
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  mocktail: ^1.0.5
+  mocktail: ^1.0.5  # ⬅️ عمل Mocks للـ repositories في الاختبارات
+  bloc_test: ^10.0.0  # ⬅️ اختبار الـ Cubits بصيغة blocTest الاحترافية
 
 flutter:
   uses-material-design: true

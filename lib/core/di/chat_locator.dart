@@ -1,7 +1,6 @@
 import 'package:flutter_ai_app/core/di/attachment_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import '../../features/chat/data/datasources/chat_remote_data_source.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
@@ -10,7 +9,7 @@ import '../../features/chat/domain/repositories/i_chat_repository.dart';
 
 import '../../features/chat/domain/usecases/create_new_chat_use_case.dart';
 import '../../features/chat/domain/usecases/delete_chat_session_use_case.dart';
-import '../../features/chat/domain/usecases/delete_message_usecase.dart';
+import '../../features/chat/domain/usecases/edit_message_usecase.dart';
 import '../../features/chat/domain/usecases/get_chat_sessions_use_case.dart';
 import '../../features/chat/domain/usecases/get_messages_usecase.dart';
 import '../../features/chat/domain/usecases/load_older_messages.dart';
@@ -25,7 +24,6 @@ void setupChatDependencies() {
     () => ChatRemoteDataSourceImpl(
       firestore: getIt<FirebaseFirestore>(),
       auth: getIt<FirebaseAuth>(),
-      storage: getIt<FirebaseStorage>(),
     ),
   );
 
@@ -41,8 +39,8 @@ void setupChatDependencies() {
     () => RetryMessageUseCase(getIt<IChatRepository>()),
   );
 
-  getIt.registerLazySingleton<DeleteMessageUseCase>(
-    () => DeleteMessageUseCase(getIt<IChatRepository>()),
+  getIt.registerLazySingleton<EditMessageUseCase>(
+    () => EditMessageUseCase(getIt<IChatRepository>()),
   );
 
   getIt.registerLazySingleton<GetMessagesUseCase>(
@@ -77,6 +75,8 @@ void setupChatDependencies() {
   );
 
   getIt.registerFactory<ChatActorCubit>(
-    () => ChatActorCubit(getIt<DeleteMessageUseCase>()),
+    () => ChatActorCubit(
+      getIt<EditMessageUseCase>(),
+    ),
   );
 }

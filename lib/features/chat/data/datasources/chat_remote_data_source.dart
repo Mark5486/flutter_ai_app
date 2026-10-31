@@ -4,8 +4,10 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_ai_app/features/audio/domain/entity/audio_entity.dart';
+import 'package:flutter_ai_app/features/chat/domain/entities/message_source.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../attachment/domain/entity/attachment_entity.dart';
@@ -31,11 +33,13 @@ abstract class IChatRemoteDataSource {
     String text, {
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch,
+    bool thinking,
   });
 
   Future<void> retryMessage(String chatId, String messageId);
 
-  Future<void> deleteMessage(String chatId, String messageId);
+  Future<void> editMessage(String chatId, String messageId, String newText);
 
   Future<void> deleteChatSession(String chatId);
 }
@@ -44,22 +48,18 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   ChatRemoteDataSourceImpl({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
-    FirebaseStorage? storage,
     http.Client? httpClient,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _auth = auth ?? FirebaseAuth.instance,
-       _storage = storage ?? FirebaseStorage.instance,
        _httpClient = httpClient ?? http.Client();
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
-  final FirebaseStorage _storage;
   final http.Client _httpClient;
 
   static const _usersCollection = 'users';
   static const _chatsCollection = 'chats';
   static const _messagesCollection = 'messages';
-  static const _chatImagesFolder = 'chat_images';
 
   static const _fieldTitle = 'title';
   static const _fieldCreatedAt = 'createdAt';
@@ -73,6 +73,11 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   static const _fieldImageUrl = 'imageUrl';
   static const _fieldImageMimeType = 'imageMimeType';
   static const _fieldAudioUrl = 'audioUrl';
+  static const _fieldThoughts = 'thoughts';
+  static const _fieldSources = 'sources';
+  static const _fieldIsEdited = 'isEdited';
+  static const _fieldOriginalText = 'originalText';
+  static const _fieldEditedAt = 'editedAt';
 
   static const _senderUser = 'user';
   static const _senderAi = 'ai';
@@ -91,6 +96,10 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
 
   static const _backendUrl =
       'https://flutter-ai-backend.markrafik633.workers.dev';
+
+  static const _compressedMime = 'image/jpeg';
+  static const _maxEncodedImageChars = 900 * 1000;
+  static const _hardEncodedImageLimit = 950 * 1000;
 
   String get _userId {
     final uid = _auth.currentUser?.uid;
@@ -175,6 +184,8 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     String text, {
     AttachmentEntity? attachment,
     AudioEntity? audio,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     _validateChatId(chatId);
 
@@ -189,14 +200,11 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
 
     String? imageUrl;
     String? audioUrl;
+    _PreparedImage? preparedImage;
 
     if (attachment != null) {
-      imageUrl = await _uploadImage(
-        chatId: chatId,
-        messageId: userMessageRef.id,
-        bytes: attachment.bytes,
-        mimeType: attachment.mimeType,
-      );
+      preparedImage = await _prepareImageData(attachment.bytes);
+      imageUrl = preparedImage.dataUrl;
     }
     if (audio != null) {
       audioUrl = audio.url;
@@ -209,7 +217,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       _fieldStatus: _statusSending,
       _fieldTimestamp: FieldValue.serverTimestamp(),
       if (imageUrl != null) _fieldImageUrl: imageUrl,
-      if (attachment != null) _fieldImageMimeType: attachment.mimeType,
+      if (attachment != null) _fieldImageMimeType: _compressedMime,
       if (audioUrl != null) _fieldAudioUrl: audioUrl,
     });
 
@@ -227,18 +235,91 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       _fieldTitle: title,
       _fieldUpdatedAt: FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    try {
-      await batch.commit();
-    } catch (_) {
-      await _deleteStorageObjectQuietly(imageUrl);
-      rethrow;
-    }
+    await batch.commit();
 
     await _generateAndSaveReply(
       chatId: chatId,
       userMessageRef: userMessageRef,
-      imageBytes: attachment?.bytes,
-      imageMimeType: attachment?.mimeType,
+      imageBytes: preparedImage?.bytes,
+      imageMimeType: preparedImage != null ? _compressedMime : null,
+      webSearch: webSearch,
+      thinking: thinking,
+    );
+  }
+
+  @override
+  Future<void> editMessage(
+    String chatId,
+    String messageId,
+    String newText,
+  ) async {
+    _validateChatId(chatId);
+
+    final messageText = newText.trim();
+    _validateMessage(messageText);
+
+    final messageRef = _chatMessagesCollection(chatId).doc(messageId);
+    final messageSnapshot = await messageRef.get();
+
+    if (!messageSnapshot.exists) {
+      throw StateError('الرسالة غير موجودة.');
+    }
+
+    final data = messageSnapshot.data()!;
+
+    if (data[_fieldSenderId] != _senderUser) {
+      throw StateError('يمكن تعديل رسائلك الخاصة فقط.');
+    }
+
+    final editedTimestamp = data[_fieldTimestamp] as Timestamp?;
+    final hasImage = data[_fieldImageUrl] != null;
+    final imageMimeType = data[_fieldImageMimeType] as String?;
+
+    // نحفظ النص قبل التعديل مرة واحدة فقط — أول تعديل يثبّت "النص الأصلي".
+    final previousOriginal = data[_fieldOriginalText] as String?;
+    final textBeforeEdit = data[_fieldText] as String? ?? '';
+
+    final batch = _firestore.batch();
+
+    batch.update(messageRef, {
+      _fieldText: messageText,
+      _fieldIsEdited: true,
+      _fieldOriginalText:
+          (previousOriginal != null && previousOriginal.trim().isNotEmpty)
+              ? previousOriginal
+              : textBeforeEdit,
+      _fieldEditedAt: FieldValue.serverTimestamp(),
+      _fieldStatus: _statusSending,
+    });
+
+    batch.set(_userChatsCollection.doc(chatId), {
+      _fieldUpdatedAt: FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (editedTimestamp != null) {
+      final newerMessages =
+          await _chatMessagesCollection(
+            chatId,
+          ).where(_fieldTimestamp, isGreaterThan: editedTimestamp).get();
+
+      for (final message in newerMessages.docs) {
+        batch.delete(message.reference);
+      }
+    }
+
+    await batch.commit();
+
+    final imageBytes =
+        hasImage
+            ? await _loadImageBytes(data[_fieldImageUrl] as String)
+            : null;
+
+    await _generateAndSaveReply(
+      chatId: chatId,
+      userMessageRef: messageRef,
+      imageBytes: imageBytes,
+      imageMimeType:
+          imageBytes != null ? (imageMimeType ?? _compressedMime) : null,
     );
   }
 
@@ -278,13 +359,15 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     final imageUrl = data[_fieldImageUrl] as String?;
     final imageMimeType = data[_fieldImageMimeType] as String?;
 
-    final imageBytes = imageUrl != null ? await _downloadImage(imageUrl) : null;
+    final imageBytes = imageUrl != null ? await _loadImageBytes(imageUrl) : null;
 
     await _generateAndSaveReply(
       chatId: chatId,
       userMessageRef: userMessageRef,
       imageBytes: imageBytes,
-      imageMimeType: imageMimeType,
+      imageMimeType: imageBytes != null
+          ? (imageMimeType ?? _compressedMime)
+          : null,
     );
   }
 
@@ -293,26 +376,33 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     required DocumentReference<Map<String, dynamic>> userMessageRef,
     Uint8List? imageBytes,
     String? imageMimeType,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     try {
       final history = await _loadConversationContext(chatId);
 
-      final aiText = await _generateAiResponse(
+      final reply = await _generateAiResponse(
         history: history,
         clientMessageId: userMessageRef.id,
         imageBytes: imageBytes,
         imageMimeType: imageMimeType,
+        webSearch: webSearch,
+        thinking: thinking,
       );
 
       final aiMessageRef = _chatMessagesCollection(chatId).doc();
       final batch = _firestore.batch();
 
       batch.set(aiMessageRef, {
-        _fieldText: aiText,
+        _fieldText: reply.text,
         _fieldSenderId: _senderAi,
         _fieldStatus: _statusSent,
         _fieldReplyTo: userMessageRef.id,
         _fieldTimestamp: FieldValue.serverTimestamp(),
+        if (reply.thoughts != null) _fieldThoughts: reply.thoughts,
+        if (reply.sources.isNotEmpty)
+          _fieldSources: reply.sources.map((source) => source.toMap()).toList(),
       });
 
       batch.update(userMessageRef, {_fieldStatus: _statusSent});
@@ -361,11 +451,13 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
         .toList();
   }
 
-  Future<String> _generateAiResponse({
+  Future<_AiReply> _generateAiResponse({
     required List<Map<String, String>> history,
     required String clientMessageId,
     Uint8List? imageBytes,
     String? imageMimeType,
+    bool webSearch = false,
+    bool thinking = false,
   }) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -389,6 +481,8 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           body: jsonEncode({
             'messages': history,
             'clientMessageId': clientMessageId,
+            if (webSearch) 'webSearch': true,
+            if (thinking) 'thinking': true,
             if (imageBytes != null && imageMimeType != null)
               'image': {
                 'mimeType': imageMimeType,
@@ -396,7 +490,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
               },
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(seconds: 40));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
@@ -416,34 +510,94 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       throw const FormatException('استجابة الذكاء الاصطناعي فارغة.');
     }
 
-    return text.trim();
-  }
-
-  Future<String> _uploadImage({
-    required String chatId,
-    required String messageId,
-    required Uint8List bytes,
-    required String mimeType,
-  }) async {
-    final extension = _extensionFromMime(mimeType);
-
-    final ref = _storage
-        .ref()
-        .child(_usersCollection)
-        .child(_userId)
-        .child(_chatImagesFolder)
-        .child(chatId)
-        .child('$messageId.$extension');
-
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(contentType: mimeType),
+    return _AiReply(
+      text: text.trim(),
+      thoughts: _parseThoughts(decoded['thoughts']),
+      sources: _parseSources(decoded['sources']),
     );
-
-    return uploadTask.ref.getDownloadURL();
   }
 
-  Future<Uint8List> _downloadImage(String url) async {
+  String? _parseThoughts(dynamic value) {
+    if (value is! String || value.trim().isEmpty) {
+      return null;
+    }
+    return value.trim();
+  }
+
+  List<MessageSource> _parseSources(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+
+    final sources = <MessageSource>[];
+
+    for (final item in value) {
+      if (item is Map<String, dynamic> &&
+          item['title'] is String &&
+          item['url'] is String &&
+          (item['title'] as String).trim().isNotEmpty &&
+          (item['url'] as String).trim().isNotEmpty) {
+        sources.add(
+          MessageSource(
+            title: item['title'] as String,
+            url: item['url'] as String,
+          ),
+        );
+      }
+    }
+
+    return sources;
+  }
+
+  Future<_PreparedImage> _prepareImageData(Uint8List bytes) async {
+    var compressed = bytes;
+
+    // على الويب لا يتوفر ملحق الضغط — نستخدم الصورة الأصلية مع احترام حد الحجم.
+    if (!kIsWeb) {
+      try {
+        final firstPass = await FlutterImageCompress.compressWithList(
+          bytes,
+          minWidth: 1024,
+          minHeight: 1024,
+          quality: 70,
+          format: CompressFormat.jpeg,
+        );
+        compressed = Uint8List.fromList(firstPass);
+      } catch (_) {}
+    }
+
+    if (base64Encode(compressed).length > _maxEncodedImageChars && !kIsWeb) {
+      try {
+        final secondPass = await FlutterImageCompress.compressWithList(
+          bytes,
+          minWidth: 800,
+          minHeight: 800,
+          quality: 60,
+          format: CompressFormat.jpeg,
+        );
+        final smaller = Uint8List.fromList(secondPass);
+        if (base64Encode(smaller).length < base64Encode(compressed).length) {
+          compressed = smaller;
+        }
+      } catch (_) {}
+    }
+
+    final encoded = base64Encode(compressed);
+    if (encoded.length > _hardEncodedImageLimit) {
+      throw Exception('حجم الصورة كبير جداً حتى بعد الضغط. جرّب صورة أصغر.');
+    }
+
+    return _PreparedImage(
+      dataUrl: 'data:$_compressedMime;base64,$encoded',
+      bytes: compressed,
+    );
+  }
+
+  Future<Uint8List> _loadImageBytes(String url) async {
+    if (url.startsWith('data:')) {
+      return base64Decode(url.substring(url.indexOf(',') + 1));
+    }
+
     final response = await _httpClient
         .get(Uri.parse(url))
         .timeout(const Duration(seconds: 20));
@@ -455,57 +609,6 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     return response.bodyBytes;
   }
 
-  Future<void> _deleteStorageObjectQuietly(String? downloadUrl) async {
-    if (downloadUrl == null) return;
-
-    try {
-      await _storage.refFromURL(downloadUrl).delete();
-    } catch (_) {}
-  }
-
-  String _extensionFromMime(String mimeType) {
-    switch (mimeType) {
-      case 'image/png':
-        return 'png';
-      case 'image/webp':
-        return 'webp';
-      case 'image/jpeg':
-      default:
-        return 'jpg';
-    }
-  }
-
-  @override
-  Future<void> deleteMessage(String chatId, String messageId) async {
-    _validateChatId(chatId);
-
-    final messagesRef = _chatMessagesCollection(chatId);
-    final messageSnapshot = await messagesRef.doc(messageId).get();
-    final replySnapshot =
-        await messagesRef.where(_fieldReplyTo, isEqualTo: messageId).get();
-
-    final batch = _firestore.batch();
-
-    batch.delete(messagesRef.doc(messageId));
-
-    for (final reply in replySnapshot.docs) {
-      batch.delete(reply.reference);
-    }
-
-    batch.set(_userChatsCollection.doc(chatId), {
-      _fieldUpdatedAt: FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    await batch.commit();
-
-    await _deleteStorageObjectQuietly(
-      messageSnapshot.data()?[_fieldImageUrl] as String?,
-    );
-    await _deleteStorageObjectQuietly(
-      messageSnapshot.data()?[_fieldAudioUrl] as String?,
-    );
-  }
-
   @override
   Future<void> deleteChatSession(String chatId) async {
     _validateChatId(chatId);
@@ -513,21 +616,12 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
     final chatRef = _userChatsCollection.doc(chatId);
     final messages = await chatRef.collection(_messagesCollection).get();
 
-    for (final message in messages.docs) {
-      await _deleteStorageObjectQuietly(
-        message.data()[_fieldImageUrl] as String?,
-      );
-      await _deleteStorageObjectQuietly(
-        message.data()[_fieldAudioUrl] as String?,
-      );
-    }
-
     for (var start = 0; start < messages.docs.length; start += 500) {
       final batch = _firestore.batch();
       final end =
           start + 500 > messages.docs.length
-              ? messages.docs.length
-              : start + 500;
+          ? messages.docs.length
+          : start + 500;
 
       for (final message in messages.docs.sublist(start, end)) {
         batch.delete(message.reference);
@@ -572,4 +666,19 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       );
     }
   }
+}
+
+class _PreparedImage {
+  const _PreparedImage({required this.dataUrl, required this.bytes});
+
+  final String dataUrl;
+  final Uint8List bytes;
+}
+
+class _AiReply {
+  const _AiReply({required this.text, this.thoughts, this.sources = const []});
+
+  final String text;
+  final String? thoughts;
+  final List<MessageSource> sources;
 }

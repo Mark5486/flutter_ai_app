@@ -13,4 +13,6 @@ abstract class IAudioRepository {
   Future<Either<Failure, void>> cancelRecording();
 
   Future<Either<Failure, AudioEntity>> uploadAudio(Uint8List bytes);
+
+  Future<Either<Failure, String>> transcribeAudio(Uint8List bytes);
 }
