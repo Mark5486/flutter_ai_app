@@ -17,10 +17,6 @@ concurrency:
   group: flutter-ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # نفس نسخة الـ SDK اللي في pubspec (Dart >=3.7.2 = Flutter 3.29.x)
-  FLUTTER_VERSION: '3.29.2'
-
 jobs:
   analyze-and-test:
     name: Analyze + Test
@@ -30,10 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ⬅️ التغيير المهم: أحدث Flutter stable بدل 3.29.2
+      # تبعيات المشروع (Firebase 4.x، go_router 17، device_info_plus 12)
+      # محتاجة Dart أحدث من اللي مع 3.29.2.
+      # لو حابب تثبّت نسخة معينة: شغّل "flutter --version" على جهازك
+      # وحط السطر flutter-version: 'x.y.z' تحت channel.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -43,8 +43,7 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # تحذير تنسيق مش حاجز — عايزين تعوّد نفسك تدريجيًا على التنسيق النضيف.
-      # لما تظبط كل الملفات: شغّل "dart format ." مرة واحدة وشيل continue-on-error.
+      # تحذير تنسيق مش حاجز — لما تظبط الملفات شغّل "dart format ." وشيل continue-on-error
       - name: Format check (non-blocking warning)
         run: dart format --output=none --set-exit-if-changed .
         continue-on-error: true
@@ -73,7 +72,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
