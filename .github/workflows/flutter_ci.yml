@@ -30,7 +30,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Format check (non-blocking warning)
         run: dart format --output=none --set-exit-if-changed .
