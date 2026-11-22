@@ -1,9 +1,3 @@
-# ============================================================
-#  Flutter CI — بيشتغل على كل push للـ main وكل Pull Request
-#  1) flutter analyze   → أي مشكلة في الكود توقف الـ pipeline
-#  2) flutter test      → كل الاختبارات لازم تعدى خضرا
-#  3) على الـ main بس: build APK debug وترفعه كـ artifact
-# ============================================================
 name: Flutter CI
 
 on:
@@ -26,11 +20,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ⬅️ التغيير المهم: أحدث Flutter stable بدل 3.29.2
-      # تبعيات المشروع (Firebase 4.x، go_router 17، device_info_plus 12)
-      # محتاجة Dart أحدث من اللي مع 3.29.2.
-      # لو حابب تثبّت نسخة معينة: شغّل "flutter --version" على جهازك
-      # وحط السطر flutter-version: 'x.y.z' تحت channel.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -43,7 +32,6 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      # تحذير تنسيق مش حاجز — لما تظبط الملفات شغّل "dart format ." وشيل continue-on-error
       - name: Format check (non-blocking warning)
         run: dart format --output=none --set-exit-if-changed .
         continue-on-error: true
@@ -61,7 +49,6 @@ jobs:
   build-android:
     name: Build Android (Debug APK)
     needs: analyze-and-test
-    # بنبني بس لما الكود يوصل للـ main — الـ Pull Requests بتتحلل من غير build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
