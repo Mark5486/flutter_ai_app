@@ -11,13 +11,12 @@ class AttachmentRemoteDataSourceImpl implements IAttachmentRemoteDataSource {
 
   @override
   Future<AttachmentModel?> pickImage() async {
-    final result = await FilePicker.platform.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.image,
-      withData: true,
     );
 
-    if (result == null || result.files.isEmpty) return null;
+    if (files.isEmpty) return null;
 
-    return AttachmentModel.fromPlatformFile(result.files.first);
+    return AttachmentModel.fromPlatformFile(files.first);
   }
 }
