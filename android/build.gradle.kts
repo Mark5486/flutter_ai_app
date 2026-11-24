@@ -22,11 +22,14 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-// Make Flutter plugins compile with the same Android SDK as the app.
+// Make Flutter plugins compile with the same Android SDK as the app,
+// after each plugin has applied its own defaults.
 subprojects {
     pluginManager.withPlugin("com.android.library") {
-        extensions.configure<LibraryExtension> {
-            compileSdk = 37
+        afterEvaluate {
+            extensions.configure<LibraryExtension> {
+                compileSdk = 37
+            }
         }
     }
 }
