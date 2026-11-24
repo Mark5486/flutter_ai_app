@@ -1,4 +1,5 @@
-import com.android.build.api.dsl.LibraryExtension
+// Used by older Flutter plugins (including file_picker) when choosing their compile SDK.
+extra["compileSdkVersion"] = 37
 
 allprojects {
     repositories {
@@ -20,16 +21,4 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-
-// Make Flutter plugins compile with the same Android SDK as the app,
-// after each plugin has applied its own defaults.
-subprojects {
-    pluginManager.withPlugin("com.android.library") {
-        afterEvaluate {
-            extensions.configure<LibraryExtension> {
-                compileSdk = 37
-            }
-        }
-    }
 }
