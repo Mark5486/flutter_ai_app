@@ -13,7 +13,7 @@ plugins {
 
 configure<ApplicationExtension> {
     namespace = "com.example.flutter_ai_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
