@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 allprojects {
     repositories {
         google()
@@ -18,4 +20,13 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+// Make Flutter plugins compile with the same Android SDK as the app.
+subprojects {
+    pluginManager.withPlugin("com.android.library") {
+        extensions.configure<LibraryExtension> {
+            compileSdk = 37
+        }
+    }
 }
