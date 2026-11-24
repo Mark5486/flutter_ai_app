@@ -17,7 +17,7 @@ dependencies:
   firebase_core: ^4.13.0
   firebase_auth: ^6.5.7
   cloud_firestore: ^6.8.0
-  firebase_storage: ^13.4.6  # ⬅️ تم التعديل للإصدار المتوفر
+  firebase_storage: ^13.4.6  #⬅
   google_sign_in: ^6.2.1
   dartz: ^0.10.1
   local_auth: ^2.3.0
@@ -28,21 +28,20 @@ dependencies:
   speech_to_text: ^7.4.0
   go_router: ^17.0.0
   flutter_bloc: ^9.1.1
-  file_picker: ^8.1.7
+  file_picker: ^13.4.1
   http: ^1.3.0
   record: ^6.2.1
   audioplayers: ^6.6.0
   permission_handler: ^13.0.1
   path_provider: ^2.1.5
-  flutter_image_compress: ^2.3.0  # ⬅️ ضغط الصور قبل تخزينها في Firestore
-  url_launcher: ^6.3.0  # ⬅️ فتح مصادر البحث في المتصفح
+  flutter_image_compress: ^2.3.0  # 
+  url_launcher: ^6.3.0  # 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  mocktail: ^1.0.5  # ⬅️ عمل Mocks للـ repositories في الاختبارات
-  bloc_test: ^10.0.0  # ⬅️ اختبار الـ Cubits بصيغة blocTest الاحترافية
-
+  mocktail: ^1.0.5  #
+  bloc_test: ^10.0.0  #
 flutter:
   uses-material-design: true
