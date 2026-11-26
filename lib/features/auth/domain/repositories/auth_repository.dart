@@ -23,6 +23,4 @@ abstract interface class IAuthRepository {
   Future<Either<AuthFailure, Unit>> sendPasswordResetEmail(String email);
 
   Future<Either<AuthFailure, Unit>> logout();
-
-  Future<Either<AuthFailure, UserEntity>> signInAnonymously();
 }

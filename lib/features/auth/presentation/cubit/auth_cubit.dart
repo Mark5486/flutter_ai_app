@@ -75,15 +75,6 @@ class AuthCubit extends Cubit<AuthState> {
     }, (_) {});
   }
 
-  Future<void> signInAnonymously() async {
-    emit(AuthLoading());
-    final result = await _authRepository.signInAnonymously();
-
-    result.fold((failure) {
-      emit(AuthFailureState(failure.message));
-    }, (_) {});
-  }
-
   Future<void> sendPasswordResetEmail(String email) async {
     emit(AuthLoading());
     final result = await _authRepository.sendPasswordResetEmail(email);

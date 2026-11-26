@@ -13,7 +13,6 @@ abstract interface class AuthRemoteDataSource {
     String password,
   );
   Future<UserModel> signInWithGoogle();
-  Future<UserModel> signInAnonymously();
   Future<void> sendPasswordResetEmail(String email);
   Future<void> logout();
 }
@@ -93,14 +92,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     final userCredential = await _firebaseAuth.signInWithCredential(credential);
     final userModel = UserModel.fromFirebaseUser(userCredential.user!);
-    await _saveUserToFirestore(userModel);
-    return userModel;
-  }
-
-  @override
-  Future<UserModel> signInAnonymously() async {
-    final credential = await _firebaseAuth.signInAnonymously();
-    final userModel = UserModel.fromFirebaseUser(credential.user!);
     await _saveUserToFirestore(userModel);
     return userModel;
   }

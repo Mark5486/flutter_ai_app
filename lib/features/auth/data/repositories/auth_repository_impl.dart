@@ -89,18 +89,6 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
-  Future<Either<AuthFailure, UserEntity>> signInAnonymously() async {
-    try {
-      final user = await _remoteDataSource.signInAnonymously();
-      return Right(user);
-    } on FirebaseAuthException catch (e) {
-      return Left(_handleFirebaseAuthException(e));
-    } catch (e) {
-      return Left(ServerAuthFailure(e.toString()));
-    }
-  }
-
-  @override
   Future<Either<AuthFailure, Unit>> sendPasswordResetEmail(String email) async {
     try {
       await _remoteDataSource.sendPasswordResetEmail(email);
@@ -122,7 +110,6 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
   }
 
-  
   AuthFailure _handleFirebaseAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
