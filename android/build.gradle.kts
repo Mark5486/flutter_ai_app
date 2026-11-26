@@ -1,3 +1,6 @@
+// Used by older Flutter plugins (including file_picker) when choosing their compile SDK.
+extra["compileSdkVersion"] = 37
+
 allprojects {
     repositories {
         google()

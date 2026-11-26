@@ -1,16 +1,4 @@
 
-# ============================================================
-#  Deploy Cloudflare Workers
-#  - تلقائي: أي push للـ main بيلمس ملفات الـ workers
-#  - يدوي: من تاب Actions تختار chat أو audio أو both
-#
-#  المطلوب منك مرة واحدة (Settings → Secrets and variables → Actions):
-#  - CF_API_TOKEN   → التوكن بتاع Cloudflare (نفس اللي استخدمناه في الإعداد)
-#  - CF_ACCOUNT_ID  → رقم الحساب بتاعك (من داشبورد Cloudflare الرئيسية)
-#
-#  ملحوظة: الـ secrets الحساسة (GEMINI_API_KEY / GROQ_API_KEY / ...)
-#  عايشة جوه Cloudflare نفسه — الـ deploy مش بيلمسها خالص.
-# ============================================================
 name: Deploy Cloudflare Workers
 
 on:
@@ -40,7 +28,6 @@ jobs:
     name: Deploy flutter-ai-backend (chat)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # على push: بينشر لو ملفاته اتغيرت — وعلى التشغيل اليدوي بيحترم اختيارك
     if: github.event_name == 'push' || inputs.target == 'chat' || inputs.target == 'both'
     steps:
       - name: Checkout

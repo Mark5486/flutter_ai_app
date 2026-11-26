@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 
 import '../../domain/entity/attachment_entity.dart';
@@ -13,10 +15,11 @@ class AttachmentModel extends AttachmentEntity {
     required super.bytes,
   });
 
-  factory AttachmentModel.fromPlatformFile(PlatformFile file) {
-    final bytes = file.bytes;
-
-    if (bytes == null) {
+  static Future<AttachmentModel> fromPlatformFile(PlatformFile file) async {
+    final Uint8List bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (_) {
       throw const AttachmentValidationException(
         'تعذر قراءة بيانات الصورة المختارة.',
       );

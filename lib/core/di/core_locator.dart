@@ -6,10 +6,8 @@ import 'package:flutter_ai_app/core/services/speech_to_text_service.dart';
 import 'package:flutter_ai_app/core/services/text_to_speech_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/biometric_service.dart';
 import '../services/device_service.dart';
 import '../services/firebase_service.dart';
 import '../services/local_storage_service.dart';
@@ -61,18 +59,6 @@ Future<void> setupCoreLocator() async {
   if (!getIt.isRegistered<DeviceService>()) {
     getIt.registerLazySingleton<DeviceService>(
       () => DeviceServiceImpl(getIt<DeviceInfoPlugin>()),
-    );
-  }
-
-  if (!getIt.isRegistered<LocalAuthentication>()) {
-    getIt.registerLazySingleton<LocalAuthentication>(
-      () => LocalAuthentication(),
-    );
-  }
-
-  if (!getIt.isRegistered<BiometricService>()) {
-    getIt.registerLazySingleton<BiometricService>(
-      () => BiometricServiceImpl(getIt<LocalAuthentication>()),
     );
   }
 

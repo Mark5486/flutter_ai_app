@@ -8,14 +8,13 @@ import Foundation
 import audioplayers_darwin
 import cloud_firestore
 import device_info_plus
-import file_picker
+import file_picker_darwin
 import firebase_auth
 import firebase_core
 import firebase_storage
 import flutter_image_compress_macos
 import flutter_tts
 import google_sign_in_ios
-import local_auth_darwin
 import path_provider_foundation
 import record_macos
 import shared_preferences_foundation
@@ -33,7 +32,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterImageCompressMacosPlugin.register(with: registry.registrar(forPlugin: "FlutterImageCompressMacosPlugin"))
   FlutterTtsPlugin.register(with: registry.registrar(forPlugin: "FlutterTtsPlugin"))
   FLTGoogleSignInPlugin.register(with: registry.registrar(forPlugin: "FLTGoogleSignInPlugin"))
-  LocalAuthPlugin.register(with: registry.registrar(forPlugin: "LocalAuthPlugin"))
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   RecordMacOsPlugin.register(with: registry.registrar(forPlugin: "RecordMacOsPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
